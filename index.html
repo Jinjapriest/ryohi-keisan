@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>旅費計算・金種表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 事務所の精算書のように、落ち着いて正確に
+   IDEA: 現金封筒に詰める前の「旅費精算書＋金種表」
+   PICTURE: 右上に総額と、紙幣・硬貨ごとの必要枚数が大きく並ぶ受け皿
+   COLOUR and TYPE: 白地・墨・朱 #c8102e・藍 #2e5f7e、見出し Noto Serif JP、本文 Noto Sans JP
+   LAYOUT: 上段＝件名と結果、中段＝一括入力と明細、下段＝一人ごとの金種表 */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#10191e);--ink:light-dark(#141414,#e9eef1);--sub:light-dark(#5b6670,#9fb0bb);
+--red:light-dark(#c8102e,#ff5a6e);--blue:light-dark(#2e5f7e,#7fb6d6);--panel:light-dark(#e6eef2,#182730);
+--line:light-dark(#cfd8de,#2b3d48);--field:light-dark(#ffffff,#0c1418)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Noto Sans JP",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+pre,.scroll{overflow-x:auto}
+h1,h2{font-family:"Noto Serif JP",serif;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,4.4vw,46px)}
+h2{font-size:22px;margin-bottom:14px}
+.tab{display:inline-block;background:var(--red);color:#fff;font-weight:700;font-size:13px;padding:3px 12px;margin-bottom:14px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:clamp(20px,3vw,40px);align-items:start}
+.meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 14px;margin-top:22px}
+.meta .full{grid-column:1/-1}
+label{display:block;font-size:13px;color:var(--sub);margin-bottom:4px}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:6px;padding:9px 10px;width:100%;min-height:44px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
+input.num{text-align:right;font-variant-numeric:tabular-nums}
+.opts{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:16px;font-size:15px}
+.opts label{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:15px;margin:0}
+.opts input[type=checkbox]{width:20px;height:20px;min-height:0}
+.res{background:var(--panel);padding:clamp(18px,2.4vw,28px);border-top:4px solid var(--red)}
+.res .k{font-size:14px;color:var(--sub)}
+.total{font-family:"Noto Serif JP",serif;font-size:clamp(38px,6vw,60px);font-weight:700;line-height:1.05;white-space:nowrap;font-variant-numeric:tabular-nums}
+.total small{font-size:.45em;margin-left:4px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 22px;margin:8px 0 16px;font-size:15px}
+.facts b{font-variant-numeric:tabular-nums}
+.denoms{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.dn{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:10px}
+.dn.zero{opacity:.38}
+.chip{flex:none;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+.bill{width:34px;height:20px;border-radius:3px;background:var(--c);box-shadow:inset 0 -3px 0 rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.35)}
+.coin{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),transparent 45%),var(--c);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2);color:#222}
+.dn .v{font-size:12px;color:var(--sub);line-height:1.2}
+.dn .n{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+button{font:inherit;font-size:15px;min-height:44px;padding:8px 16px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button.pri{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+button.ghost{border-color:transparent;color:var(--red)}
+button:hover{filter:brightness(.96)}
+.msg{font-size:14px;color:var(--blue);min-height:1.4em;margin-top:6px}
+.bulk{background:var(--panel);padding:16px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:12px;align-items:end;margin-bottom:18px}
+.bulk .mul{display:flex;align-items:center;gap:6px}.bulk .mul span{flex:none;color:var(--sub)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:right;white-space:nowrap}
+th{font-size:13px;color:var(--sub);font-weight:500;background:var(--bg);position:sticky;top:0}
+td.l,th.l{text-align:left}
+td input{min-height:40px;padding:6px 8px}
+#items{min-width:1080px}#items td:nth-child(2),#items td:nth-child(3){min-width:150px}#items td.rt{text-align:center}#items td.rt input{width:22px;height:22px;min-height:0}#items td.amt input{width:110px}
+#items tfoot td,#dtab tfoot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+.sum{font-weight:700}
+#dtab{min-width:960px}#dtab td.z{color:var(--line)}
+.note{font-size:13px;color:var(--sub);margin-top:12px}
+hr{border:0;border-top:1px solid var(--line);margin:0}
+.rhead{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;margin-bottom:14px}.rhead h2{margin:0}
+.sheet{border:1px solid var(--line);padding:clamp(16px,3vw,32px);background:var(--bg)}
+.stitle{font-family:"Noto Serif JP",serif;font-size:26px;font-weight:700;text-align:center;letter-spacing:.3em;margin-bottom:12px}
+.smeta{display:flex;flex-wrap:wrap;gap:4px 28px;font-size:15px;margin-bottom:6px}
+.sline{margin:4px 0 12px;font-size:15px}
+#rtab{min-width:860px}#rtab th,#rtab td{border:1px solid var(--line);padding:6px 8px}
+#rtab tbody td{height:58px}#rtab td.stamp,#rtab th.stamp{width:84px;text-align:center}
+#rtab tfoot td{font-weight:700}
+@media print{
+ @page{size:A4 portrait;margin:12mm}
+ :root{color-scheme:light}body{background:#fff;color:#000;font-size:11pt}
+ body>section:not(#rosterBand),body>hr,.rhead,#rosterBand .note{display:none!important}
+ .band{padding:0}.sheet{border:0;padding:0}.scroll{overflow:visible}
+ #rtab{min-width:0;width:100%;font-size:10.5pt}#rtab th,#rtab td{border:1px solid #000;color:#000;background:#fff;position:static}
+ #rtab tbody td{height:13mm}#rtab tr{break-inside:avoid}}
+@media(max-width:900px){.top{grid-template-columns:minmax(0,1fr)}.bulk{grid-template-columns:repeat(2,minmax(0,1fr))}.bulk button{grid-column:1/-1}}
+@media(max-width:600px){.meta{grid-template-columns:minmax(0,1fr)}table{font-size:13px}}
+</style>
+</head>
+<body>
+<section class="band"><div class="wrap top">
+  <div>
+    <span class="tab">旅費精算</span>
+    <h1>旅費計算と金種表</h1>
+    <p style="margin:10px 0 0;color:var(--sub)">最大20人分の旅費を、出発する神社ごとに計算して合計し、封筒に入れる紙幣・硬貨の枚数を一人ずつ出します。</p>
+    <div class="meta">
+      <div class="full"><label for="title">件名</label><input id="title" placeholder="例：研修会参加旅費"></div>
+      <div><label for="date">日付</label><input id="date" type="date"></div>
+      <div><label for="dest">行先</label><input id="dest" placeholder="例：伊勢市"></div>
+      <div><label for="count">人数</label><select id="count"></select></div>
+      <div><label for="round">端数処理（一人ごと）</label>
+        <select id="round"><option value="1">そのまま</option><option value="10">1の位を切り上げ（10円単位）</option><option value="100">100円単位に切り上げ</option><option value="1000">1,000円単位に切り上げ</option></select></div>
+    </div>
+    <div class="opts">
+      <label><input type="checkbox" id="use2000">2,000円札を使う</label>
+      <label><input type="checkbox" id="use5000" checked>5,000円札を使う</label>
+    </div>
+  </div>
+  <div class="res" aria-live="polite">
+    <div class="k">支給総額</div>
+    <div class="total" id="grand">0<small>円</small></div>
+    <div class="facts"><span>人数 <b id="fN">0</b>人</span><span>紙幣 <b id="fB">0</b>枚</span><span>硬貨 <b id="fC">0</b>枚</span></div>
+    <div class="k" style="margin-bottom:8px">用意する金種（全員分）</div>
+    <div class="denoms" id="denoms"></div>
+    <div class="actions">
+      <button class="pri" id="copyAll">表をコピー（Excel貼り付け用）</button>
+      <button id="clearAmt">金額だけ消す</button>
+      <button class="ghost" id="reset">すべて初期化</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+</div></section>
+<hr>
+<section class="band"><div class="wrap">
+  <h2>明細</h2>
+  <div class="bulk">
+    <div><label for="bT">電車賃（片道）</label><input id="bT" class="num" inputmode="numeric" placeholder="0"></div>
+    <div><label for="bB">バス賃（片道）</label><input id="bB" class="num" inputmode="numeric" placeholder="0"></div>
+    <div><label for="bH">宿泊費 単価 × 泊数</label><div class="mul"><input id="bH" class="num" inputmode="numeric" placeholder="0"><span>×</span><input id="bHn" class="num" inputmode="numeric" value="1" style="width:56px"></div></div>
+    <div><label for="bD">日当 単価 × 日数</label><div class="mul"><input id="bD" class="num" inputmode="numeric" placeholder="0"><span>×</span><input id="bDn" class="num" inputmode="numeric" value="1" style="width:56px"></div></div>
+    <div><label for="bO">その他</label><input id="bO" class="num" inputmode="numeric" placeholder="0"></div>
+    <div><label for="bScope">対象</label><select id="bScope"><option value="all">全員</option><option value="empty">未入力の人だけ</option></select></div>
+    <button class="pri" id="apply">一括で入れる</button>
+  </div>
+  <div class="scroll"><table id="items">
+    <thead><tr><th class="l">No.</th><th class="l">氏名</th><th class="l">出発神社</th><th>電車賃（片道）</th><th>バス賃（片道）</th><th>往復</th><th>交通費</th><th>宿泊費</th><th>日当</th><th>その他</th><th>小計</th><th>支給額</th></tr></thead>
+    <tbody id="rows"></tbody>
+    <datalist id="shrines"></datalist>
+    <tfoot><tr><td class="l" colspan="3">合計</td><td id="tT">0</td><td id="tB">0</td><td></td><td id="tC">0</td><td id="tH">0</td><td id="tD">0</td><td id="tO">0</td><td id="tS">0</td><td id="tP">0</td></tr></tfoot>
+  </table></div>
+  <p class="note">金額は半角・全角どちらの数字でも入力できます。電車賃とバス賃は片道の額を入れてください。「往復」にチェックがある人は2倍にして交通費にします（片道だけの人はチェックを外します）。出発神社の欄で、登録済みの神社（南方八幡宮・山口駅・武氏八幡宮・代田八幡宮）を選ぶと、片道の電車賃とバス賃が自動で入ります。一度入れた神社名も候補に出ます。支給額は小計に端数処理をかけた額です。入力内容はこの端末のブラウザに自動で保存されます。</p>
+</div></section>
+<hr>
+<section class="band"><div class="wrap">
+  <h2>金種表（一人ごと）</h2>
+  <div class="scroll"><table id="dtab"><thead id="dhead"></thead><tbody id="dbody"></tbody><tfoot id="dfoot"></tfoot></table></div>
+  <p class="note">大きい金種から順に使う組み合わせです。両替の準備には合計の行をお使いください。</p>
+</div></section>
+<hr>
+<section class="band" id="rosterBand"><div class="wrap">
+  <div class="rhead"><h2>旅費受領名簿</h2><button id="copyRoster">名簿をコピー（Excel貼り付け用）</button></div>
+  <div class="sheet" id="sheet">
+    <div class="stitle">旅費受領名簿</div>
+    <div class="smeta" id="smeta"></div>
+    <p class="sline">下記の金額を、旅費として確かに受領しました。</p>
+    <div class="scroll"><table id="rtab">
+      <thead><tr><th class="l">No.</th><th class="l">出発神社</th><th class="l">氏名</th><th>交通費</th><th>宿泊費</th><th>日当</th><th>その他</th><th>支給額</th><th class="stamp">受領印</th></tr></thead>
+      <tbody id="rbody"></tbody><tfoot id="rfoot"></tfoot>
+    </table></div>
+  </div>
+  <p class="note">この画面を印刷すると、この名簿だけが白黒で印刷されます。印刷できない場合は「名簿をコピー」でExcelに貼り付けてから印刷してください。</p>
+</div></section>
+
+<script>
+{
+const MAX=20,KEY='ryohi-calc-v1';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>n.toLocaleString('ja-JP');
+const toNum=v=>{const s=String(v||'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[^\d]/g,'');return s?parseInt(s,10):0};
+const ALL=[
+ {v:10000,b:1,c:'#8a7a4f'},{v:5000,b:1,c:'#7d5a8c'},{v:2000,b:1,c:'#3f7a5a'},{v:1000,b:1,c:'#2e5f7e'},
+ {v:500,b:0,c:'#d4b24c'},{v:100,b:0,c:'#c3c7cb'},{v:50,b:0,c:'#d3d6d9'},{v:10,b:0,c:'#b8743f'},{v:5,b:0,c:'#d9b65a'},{v:1,b:0,c:'#e4e6e8'}];
+const PRE=[{n:'南方八幡宮',t:990,b:0,r:'八幡宮バス停→床波（宇部市営バス・バス賃は手入力）→床波駅→下関駅'},{n:'山口駅',t:1520,b:0,r:'山口駅→新山口駅→下関駅'},{n:'武氏八幡宮',t:2640,b:0,r:'生活バス→江崎駅→下関駅'},{n:'代田八幡宮',t:2640,b:0,r:'柳井港駅→下関駅'}];
+const blank=()=>({name:'',from:'',t:'',b:'',rt:true,h:'',d:'',o:''});
+let st={v:2,title:'',date:'',dest:'',count:5,round:10,use2000:false,use5000:true,rows:Array.from({length:MAX},blank)};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&Array.isArray(s.rows)){st={...st,...s};if(s.v!==2){st.round=10;st.v=2}while(st.rows.length<MAX)st.rows.push(blank());st.rows=st.rows.map(r=>({...blank(),...r}))}}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const denomList=()=>ALL.filter(d=>(d.v!==2000||st.use2000)&&(d.v!==5000||st.use5000));
+const split=(amt,list)=>list.map(d=>{const n=Math.floor(amt/d.v);amt-=n*d.v;return n});
+const fare=r=>(toNum(r.t)+toNum(r.b))*(r.rt===false?1:2);
+const pay=r=>{const s=fare(r)+toNum(r.h)+toNum(r.d)+toNum(r.o);const u=st.round;return {s,p:u>1?Math.ceil(s/u)*u:s}};
+
+$('count').innerHTML=Array.from({length:MAX},(_,i)=>`<option value="${i+1}">${i+1}人</option>`).join('');
+const bindMeta=()=>{
+  $('title').value=st.title;$('date').value=st.date;$('dest').value=st.dest;$('count').value=st.count;
+  $('round').value=st.round;$('use2000').checked=st.use2000;$('use5000').checked=st.use5000};
+const cell=(i,k)=>`<td class="amt"><input class="num" inputmode="numeric" data-i="${i}" data-k="${k}" value="${st.rows[i][k]?esc(fmt(toNum(st.rows[i][k]))):''}" placeholder="0" aria-label="${i+1}番 ${{t:'電車賃',b:'バス賃',h:'宿泊費',d:'日当',o:'その他'}[k]}"></td>`;
+const renderRows=()=>{
+  $('rows').innerHTML=Array.from({length:st.count},(_,i)=>`<tr><td class="l">${i+1}</td>
+  <td class="l"><input data-i="${i}" data-k="name" value="${esc(st.rows[i].name)}" placeholder="氏名" aria-label="${i+1}番 氏名"></td>
+  <td class="l"><input data-i="${i}" data-k="from" value="${esc(st.rows[i].from)}" placeholder="例：明木神社" aria-label="${i+1}番 出発神社" list="shrines"></td>
+  ${cell(i,'t')}${cell(i,'b')}<td class="rt"><input type="checkbox" data-i="${i}" data-k="rt" ${st.rows[i].rt===false?'':'checked'} aria-label="${i+1}番 往復"></td><td id="c${i}">0</td>${cell(i,'h')}${cell(i,'d')}${cell(i,'o')}<td id="s${i}">0</td><td class="sum" id="p${i}">0</td></tr>`).join('');
+  update()};
+
+const update=()=>{
+  const list=denomList(),act=st.rows.slice(0,st.count);
+  let tot={t:0,b:0,c:0,h:0,d:0,o:0,s:0,p:0};const dsum=list.map(()=>0);
+  const body=act.map((r,i)=>{
+    const {s,p}=pay(r);['t','b','h','d','o'].forEach(k=>tot[k]+=toNum(r[k]));tot.c+=fare(r);$('c'+i).textContent=fmt(fare(r));tot.s+=s;tot.p+=p;
+    $('s'+i).textContent=fmt(s);$('p'+i).textContent=fmt(p);
+    const sp=split(p,list);sp.forEach((n,j)=>dsum[j]+=n);
+    return `<tr><td class="l">${i+1}</td><td class="l">${esc(r.name||'—')}</td><td class="l">${esc(r.from||'—')}</td><td class="sum">${fmt(p)}</td>${sp.map(n=>`<td class="${n?'':'z'}">${n||'0'}</td>`).join('')}</tr>`}).join('');
+  ['t','b','c','h','d','o','s','p'].forEach(k=>$('t'+k.toUpperCase()).textContent=fmt(tot[k]));
+  $('shrines').innerHTML=PRE.map(p=>`<option value="${esc(p.n)}">${esc(p.r)}　電車${fmt(p.t)}円</option>`).join('')+[...new Set(st.rows.map(r=>r.from.trim()).filter(v=>v&&!PRE.some(p=>p.n===v)))].map(v=>`<option value="${esc(v)}">`).join('');
+  $('dhead').innerHTML=`<tr><th class="l">No.</th><th class="l">氏名</th><th class="l">出発神社</th><th>支給額</th>${list.map(d=>`<th>${fmt(d.v)}円</th>`).join('')}</tr>`;
+  $('dbody').innerHTML=body;
+  $('dfoot').innerHTML=`<tr><td class="l" colspan="3">合計枚数</td><td>${fmt(tot.p)}</td>${dsum.map(n=>`<td>${fmt(n)}</td>`).join('')}</tr>`;
+  const fs=r=>fare(r);
+  $('smeta').innerHTML=`<span>件名：${esc(st.title||'　　　　　　　')}</span><span>日付：${esc(st.date?st.date.replace(/-/g,'/'):'　　年　月　日')}</span><span>行先：${esc(st.dest||'　　　　')}</span><span>人数：${st.count}人</span>`;
+  $('rbody').innerHTML=act.map((r,i)=>`<tr><td class="l">${i+1}</td><td class="l">${esc(r.from)}</td><td class="l">${esc(r.name)}</td><td>${fmt(fs(r))}</td><td>${fmt(toNum(r.h))}</td><td>${fmt(toNum(r.d))}</td><td>${fmt(toNum(r.o))}</td><td class="sum">${fmt(pay(r).p)}</td><td class="stamp"></td></tr>`).join('');
+  $('rfoot').innerHTML=`<tr><td class="l" colspan="3">合計</td><td>${fmt(tot.c)}</td><td>${fmt(tot.h)}</td><td>${fmt(tot.d)}</td><td>${fmt(tot.o)}</td><td>${fmt(tot.p)}</td><td></td></tr>`;
+  $('grand').innerHTML=`${fmt(tot.p)}<small>円</small>`;
+  $('fN').textContent=st.count;
+  $('fB').textContent=fmt(list.reduce((a,d,j)=>a+(d.b?dsum[j]:0),0));
+  $('fC').textContent=fmt(list.reduce((a,d,j)=>a+(d.b?0:dsum[j]),0));
+  $('denoms').innerHTML=list.map((d,j)=>`<div class="dn${dsum[j]?'':' zero'}"><span class="chip ${d.b?'bill':'coin'}" style="--c:${d.c}">${d.v>=1000?d.v/1000+'千':d.v}</span><span><span class="v">${fmt(d.v)}円</span><br><span class="n">${fmt(dsum[j])}</span><span class="v"> ${d.b?'枚':'枚'}</span></span></div>`).join('');
+  save()};
+
+$('rows').addEventListener('input',e=>{const t=e.target,i=+t.dataset.i,k=t.dataset.k;if(k==null)return;st.rows[i][k]=(k==='name'||k==='from')?t.value:k==='rt'?t.checked:String(toNum(t.value)||'');
+  if(k==='from'){const p=PRE.find(x=>x.n===t.value.trim());if(p){st.rows[i].t=String(p.t||'');st.rows[i].b=String(p.b||'');
+    const q=x=>$('rows').querySelector(`input[data-i="${i}"][data-k="${x}"]`);q('t').value=p.t?fmt(p.t):'';q('b').value=p.b?fmt(p.b):'';if(p.n==='南方八幡宮')q('b').focus()}}
+  update()});
+$('rows').addEventListener('focusout',e=>{const t=e.target;if(t.classList.contains('num')){const n=toNum(t.value);t.value=n?fmt(n):''}});
+$('rows').addEventListener('focusin',e=>{const t=e.target;if(t.classList.contains('num'))t.value=t.value.replace(/,/g,'')});
+$('title').addEventListener('input',e=>{st.title=e.target.value;update()});
+$('date').addEventListener('input',e=>{st.date=e.target.value;update()});
+$('dest').addEventListener('input',e=>{st.dest=e.target.value;update()});
+$('count').addEventListener('change',e=>{st.count=+e.target.value;renderRows()});
+$('round').addEventListener('change',e=>{st.round=+e.target.value;update()});
+$('use2000').addEventListener('change',e=>{st.use2000=e.target.checked;update()});
+$('use5000').addEventListener('change',e=>{st.use5000=e.target.checked;update()});
+
+const say=m=>{$('msg').textContent=m;clearTimeout(say.t);say.t=setTimeout(()=>$('msg').textContent='',4000)};
+$('apply').addEventListener('click',()=>{
+  const v={t:toNum($('bT').value),b:toNum($('bB').value),h:toNum($('bH').value)*(toNum($('bHn').value)||0),d:toNum($('bD').value)*(toNum($('bDn').value)||0),o:toNum($('bO').value)};
+  const only=$('bScope').value==='empty';let n=0;
+  for(let i=0;i<st.count;i++){const r=st.rows[i];
+    if(only&&(toNum(r.t)||toNum(r.b)||toNum(r.h)||toNum(r.d)||toNum(r.o)))continue;
+    ['t','b','h','d','o'].forEach(k=>{if($('b'+k.toUpperCase()).value!=='')r[k]=String(v[k]||'')});n++}
+  renderRows();say(`${n}人分に入れました。`)});
+$('clearAmt').addEventListener('click',()=>{st.rows.forEach(r=>{r.t=r.b=r.h=r.d=r.o='';r.rt=true});renderRows();say('金額を消しました（氏名・出発神社は残しています）。')});
+let armed=0;
+$('reset').addEventListener('click',e=>{
+  if(!armed){armed=1;e.target.textContent='もう一度押すと初期化';setTimeout(()=>{armed=0;e.target.textContent='すべて初期化'},3000);return}
+  armed=0;e.target.textContent='すべて初期化';
+  st={...st,title:'',date:'',dest:'',count:5,round:10,rows:Array.from({length:MAX},blank)};bindMeta();renderRows();say('初期化しました。')});
+$('copyAll').addEventListener('click',async()=>{
+  const list=denomList(),L=[];
+  L.push(['件名',st.title],['日付',st.date],['行先',st.dest],[]);
+  L.push(['No.','氏名','出発神社','電車賃(片道)','バス賃(片道)','往復','交通費','宿泊費','日当','その他','小計','支給額',...list.map(d=>d.v+'円')]);
+  const ds=list.map(()=>0);let P=0;
+  st.rows.slice(0,st.count).forEach((r,i)=>{const {s,p}=pay(r);P+=p;const sp=split(p,list);sp.forEach((n,j)=>ds[j]+=n);
+    L.push([i+1,r.name,r.from,toNum(r.t),toNum(r.b),r.rt===false?'片道':'往復',fare(r),toNum(r.h),toNum(r.d),toNum(r.o),s,p,...sp])});
+  L.push(['合計','','','','','','','','','','',P,...ds]);
+  const tsv=L.map(r=>r.join('\t')).join('\n');
+  try{await navigator.clipboard.writeText(tsv);say('コピーしました。Excelやスプレッドシートに貼り付けできます。')}
+  catch(err){say('コピーできませんでした。ブラウザの設定をご確認ください。')}});
+
+$('copyRoster').addEventListener('click',async()=>{
+  const L=[['旅費受領名簿'],['件名',st.title],['日付',st.date],['行先',st.dest],['下記の金額を、旅費として確かに受領しました。'],[],
+    ['No.','出発神社','氏名','交通費','宿泊費','日当','その他','支給額','受領印']];
+  let T={c:0,h:0,d:0,o:0,p:0};
+  st.rows.slice(0,st.count).forEach((r,i)=>{const p=pay(r).p,c=fare(r);T.c+=c;T.h+=toNum(r.h);T.d+=toNum(r.d);T.o+=toNum(r.o);T.p+=p;
+    L.push([i+1,r.from,r.name,c,toNum(r.h),toNum(r.d),toNum(r.o),p,''])});
+  L.push(['合計','','',T.c,T.h,T.d,T.o,T.p,'']);
+  try{await navigator.clipboard.writeText(L.map(r=>r.join('\t')).join('\n'));say('名簿をコピーしました。Excelに貼り付けて印刷できます。')}
+  catch(err){say('コピーできませんでした。ブラウザの設定をご確認ください。')}});
+bindMeta();renderRows();
+}
+</script>
+</body>
+</html>
