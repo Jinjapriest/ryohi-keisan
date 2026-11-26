@@ -139,7 +139,7 @@ hr{border:0;border-top:1px solid var(--line);margin:0}
     <datalist id="shrines"></datalist>
     <tfoot><tr><td class="l" colspan="3">合計</td><td id="tT">0</td><td id="tB">0</td><td></td><td id="tC">0</td><td id="tH">0</td><td id="tD">0</td><td id="tO">0</td><td id="tS">0</td><td id="tP">0</td></tr></tfoot>
   </table></div>
-  <p class="note">金額は半角・全角どちらの数字でも入力できます。電車賃とバス賃は片道の額を入れてください。「往復」にチェックがある人は2倍にして交通費にします（片道だけの人はチェックを外します）。出発神社の欄で、登録済みの神社（南方八幡宮・山口駅・武氏八幡宮・代田八幡宮）を選ぶと、片道の電車賃とバス賃が自動で入ります。一度入れた神社名も候補に出ます。支給額は小計に端数処理をかけた額です。入力内容はこの端末のブラウザに自動で保存されます。</p>
+  <p class="note">金額は半角・全角どちらの数字でも入力できます。電車賃とバス賃は片道の額を入れてください。「往復」にチェックがある人は2倍にして交通費にします（片道だけの人はチェックを外します）。出発神社の欄で、登録済みの出発地（南方八幡宮・山口駅・武氏八幡宮・代田八幡宮・山口大神宮・山口県神社庁）を選ぶと、片道の電車賃とバス賃が自動で入ります。一度入れた神社名も候補に出ます。支給額は小計に端数処理をかけた額です。入力内容はこの端末のブラウザに自動で保存されます。</p>
 </div></section>
 <hr>
 <section class="band"><div class="wrap">
@@ -172,7 +172,7 @@ const toNum=v=>{const s=String(v||'').replace(/[０-９]/g,c=>String.fromCharCod
 const ALL=[
  {v:10000,b:1,c:'#8a7a4f'},{v:5000,b:1,c:'#7d5a8c'},{v:2000,b:1,c:'#3f7a5a'},{v:1000,b:1,c:'#2e5f7e'},
  {v:500,b:0,c:'#d4b24c'},{v:100,b:0,c:'#c3c7cb'},{v:50,b:0,c:'#d3d6d9'},{v:10,b:0,c:'#b8743f'},{v:5,b:0,c:'#d9b65a'},{v:1,b:0,c:'#e4e6e8'}];
-const PRE=[{n:'南方八幡宮',t:990,b:0,r:'八幡宮バス停→床波（宇部市営バス・バス賃は手入力）→床波駅→下関駅'},{n:'山口駅',t:1520,b:0,r:'山口駅→新山口駅→下関駅'},{n:'武氏八幡宮',t:2640,b:0,r:'生活バス→江崎駅→下関駅'},{n:'代田八幡宮',t:2640,b:0,r:'柳井港駅→下関駅'}];
+const PRE=[{n:'南方八幡宮',t:990,b:0,r:'八幡宮バス停→床波（宇部市営バス・バス賃は手入力）→床波駅→下関駅'},{n:'山口駅',t:1520,b:0,r:'山口駅→新山口駅→下関駅'},{n:'武氏八幡宮',t:2640,b:0,r:'生活バス→江崎駅→下関駅'},{n:'代田八幡宮',t:2640,b:0,r:'柳井港駅→下関駅'},{n:'山口大神宮',t:1520,b:170,r:'県庁前バス停→山口駅（JRバス）→新山口駅→下関駅'},{n:'山口県神社庁',t:1520,b:0,r:'上山口駅（徒歩約9分）→新山口駅→下関駅'}];
 const blank=()=>({name:'',from:'',t:'',b:'',rt:true,h:'',d:'',o:''});
 let st={v:2,title:'',date:'',dest:'',count:5,round:10,use2000:false,use5000:true,rows:Array.from({length:MAX},blank)};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&Array.isArray(s.rows)){st={...st,...s};if(s.v!==2){st.round=10;st.v=2}while(st.rows.length<MAX)st.rows.push(blank());st.rows=st.rows.map(r=>({...blank(),...r}))}}catch(e){}
