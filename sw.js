@@ -1,6 +1,6 @@
 // 旅費計算アプリ：オフラインでも開けるようにするための仕組み
 // 中身を更新したら VERSION の数字を上げる
-const VERSION = 'ryohi-v1';
+const VERSION = 'ryohi-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

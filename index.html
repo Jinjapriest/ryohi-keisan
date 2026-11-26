@@ -81,6 +81,14 @@ hr{border:0;border-top:1px solid var(--line);margin:0}
 .stitle{font-family:"Noto Serif JP",serif;font-size:26px;font-weight:700;text-align:center;letter-spacing:.3em;margin-bottom:12px}
 .smeta{display:flex;flex-wrap:wrap;gap:4px 28px;font-size:15px;margin-bottom:6px}
 .sline{margin:4px 0 12px;font-size:15px}
+.bk{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.bk .box{background:var(--panel);padding:16px}
+.bk .big{font-family:"Noto Serif JP",serif;font-size:clamp(28px,4vw,40px);font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bk table td,.bk table th{padding:6px 8px}
+.ex{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:16px}
+.ex .arrow{font-size:22px;color:var(--red);font-weight:700}
+.ok{color:var(--blue);font-weight:700}.ng{color:var(--red);font-weight:700}
+@media(max-width:700px){.bk{grid-template-columns:minmax(0,1fr)}}
 #rtab{min-width:860px}#rtab th,#rtab td{border:1px solid var(--line);padding:6px 8px}
 #rtab tbody td{height:58px}#rtab td.stamp,#rtab th.stamp{width:84px;text-align:center}
 #rtab tfoot td{font-weight:700}
@@ -156,6 +164,13 @@ hr{border:0;border-top:1px solid var(--line);margin:0}
   <p class="note">大きい金種から順に使う組み合わせです。両替の準備には合計の行をお使いください。</p>
 </div></section>
 <hr>
+<section class="band" id="bankBand"><div class="wrap">
+  <div class="rhead"><h2>信金での払い出し</h2>
+    <div style="display:flex;align-items:center;gap:8px"><label for="limit" style="margin:0;white-space:nowrap">上限枚数</label><input id="limit" class="num" inputmode="numeric" style="width:90px"><span>枚</span></div></div>
+  <div id="bank"></div>
+  <p class="note">払い出しの上限枚数に収まるように、そのまま使える金種はできるだけ残し、細かい分は大きいお札にまとめて払い出します。まとめた分は両替で必要な金種に崩してください。両替で受け取る枚数がいちばん少なくなる組み合わせを選んでいます。</p>
+</div></section>
+<hr>
 <section class="band" id="rosterBand"><div class="wrap">
   <div class="rhead"><h2>旅費受領名簿</h2><button id="copyRoster">名簿をコピー（Excel貼り付け用）</button></div>
   <div class="sheet" id="sheet">
@@ -182,17 +197,40 @@ const ALL=[
  {v:500,b:0,c:'#d4b24c'},{v:100,b:0,c:'#c3c7cb'},{v:50,b:0,c:'#d3d6d9'},{v:10,b:0,c:'#b8743f'},{v:5,b:0,c:'#d9b65a'},{v:1,b:0,c:'#e4e6e8'}];
 const PRE=[{n:'南方八幡宮',t:990,b:0,r:'八幡宮バス停→床波（宇部市営バス・バス賃は手入力）→床波駅→下関駅'},{n:'山口駅',t:1520,b:0,r:'山口駅→新山口駅→下関駅'},{n:'武氏八幡宮',t:2640,b:0,r:'生活バス→江崎駅→下関駅'},{n:'代田八幡宮',t:2640,b:0,r:'柳井港駅→下関駅'},{n:'山口大神宮',t:1520,b:170,r:'県庁前バス停→山口駅（JRバス）→新山口駅→下関駅'},{n:'山口県神社庁',t:1520,b:0,r:'上山口駅（徒歩約9分）→新山口駅→下関駅'}];
 const blank=()=>({name:'',from:'',t:'',b:'',rt:true,h:'',d:'',o:''});
-let st={v:2,title:'',date:'',dest:'',count:5,round:10,use2000:false,use5000:true,rows:Array.from({length:MAX},blank)};
+let st={v:2,limit:50,title:'',date:'',dest:'',count:5,round:10,use2000:false,use5000:true,rows:Array.from({length:MAX},blank)};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&Array.isArray(s.rows)){st={...st,...s};if(s.v!==2){st.round=10;st.v=2}while(st.rows.length<MAX)st.rows.push(blank());st.rows=st.rows.map(r=>({...blank(),...r}))}}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const save=()=>{try{const {_bank,...o}=st;localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}};
 const denomList=()=>ALL.filter(d=>(d.v!==2000||st.use2000)&&(d.v!==5000||st.use5000));
 const split=(amt,list)=>list.map(d=>{const n=Math.floor(amt/d.v);amt-=n*d.v;return n});
 const fare=r=>(toNum(r.t)+toNum(r.b))*(r.rt===false?1:2);
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const cnt=a=>a.reduce((x,y)=>x+y,0);
+const bankPlan=(need,list,L)=>{
+  const P=cnt(need),T=need.reduce((a,n,j)=>a+n*list[j].v,0),z=list.map(()=>0);
+  const minP=cnt(split(T,list));
+  if(P<=L)return{direct:true,P,T,w:need.slice(),u:z,e:z};
+  if(minP>L)return{impossible:true,P,T,minP};
+  let unit=0;list.forEach((d,j)=>{if(need[j])unit=gcd(unit,d.v)});
+  const M=Math.round(T/unit),items=[];
+  list.forEach((d,j)=>{let n=need[j],k=1;while(n>0){const c=Math.min(k,n);items.push({j,c,val:c*d.v/unit});n-=c;k*=2}});
+  if(M*items.length>4e7){ // 金額が大きすぎるときは簡易計算
+    const w=need.slice();return{heavy:true,P,T,minP}}
+  const INF=1e9,dp=new Int32Array(M+1).fill(INF),tk=new Uint8Array(items.length*(M+1));dp[0]=0;
+  items.forEach((it,i)=>{const o=i*(M+1);for(let r=M;r>=it.val;r--){const c=dp[r-it.val]+it.c;if(c<dp[r]){dp[r]=c;tk[o+r]=1}}});
+  let best=-1,bu=INF,bg=INF;
+  for(let r=1;r<=M;r++){if(dp[r]>=INF||dp[r]>bu)continue;const g=cnt(split(r*unit,list));
+    if(P-dp[r]+g<=L&&(dp[r]<bu||(dp[r]===bu&&g<bg))){best=r;bu=dp[r];bg=g}}
+  if(best<0)return{impossible:true,P,T,minP};
+  const u=list.map(()=>0);let r=best;
+  for(let i=items.length-1;i>=0;i--){if(tk[i*(M+1)+r]){u[items[i].j]+=items[i].c;r-=items[i].val}}
+  const e=split(best*unit,list),w=need.map((n,j)=>n-u[j]+e[j]);
+  list.forEach((d,j)=>{const m=Math.min(u[j],e[j]);u[j]-=m;e[j]-=m});
+  return{P,T,w,u,e,R:e.reduce((a,n,j)=>a+n*list[j].v,0)}};
 const pay=r=>{const s=fare(r)+toNum(r.h)+toNum(r.d)+toNum(r.o);const u=st.round;return {s,p:u>1?Math.ceil(s/u)*u:s}};
 
 $('count').innerHTML=Array.from({length:MAX},(_,i)=>`<option value="${i+1}">${i+1}人</option>`).join('');
 const bindMeta=()=>{
-  $('title').value=st.title;$('date').value=st.date;$('dest').value=st.dest;$('count').value=st.count;
+  $('title').value=st.title;$('date').value=st.date;$('dest').value=st.dest;$('limit').value=st.limit;$('count').value=st.count;
   $('round').value=st.round;$('use2000').checked=st.use2000;$('use5000').checked=st.use5000};
 const cell=(i,k)=>`<td class="amt"><input class="num" inputmode="numeric" data-i="${i}" data-k="${k}" value="${st.rows[i][k]?esc(fmt(toNum(st.rows[i][k]))):''}" placeholder="0" aria-label="${i+1}番 ${{t:'電車賃',b:'バス賃',h:'宿泊費',d:'日当',o:'その他'}[k]}"></td>`;
 const renderRows=()=>{
@@ -219,6 +257,19 @@ const update=()=>{
   $('smeta').innerHTML=`<span>件名：${esc(st.title||'　　　　　　　')}</span><span>日付：${esc(st.date?st.date.replace(/-/g,'/'):'　　年　月　日')}</span><span>行先：${esc(st.dest||'　　　　')}</span><span>人数：${st.count}人</span>`;
   $('rbody').innerHTML=act.map((r,i)=>`<tr><td class="l">${i+1}</td><td class="l">${esc(r.from)}</td><td class="l">${esc(r.name)}</td><td>${fmt(fs(r))}</td><td>${fmt(toNum(r.h))}</td><td>${fmt(toNum(r.d))}</td><td>${fmt(toNum(r.o))}</td><td class="sum">${fmt(pay(r).p)}</td><td class="stamp"></td></tr>`).join('');
   $('rfoot').innerHTML=`<tr><td class="l" colspan="3">合計</td><td>${fmt(tot.c)}</td><td>${fmt(tot.h)}</td><td>${fmt(tot.d)}</td><td>${fmt(tot.o)}</td><td>${fmt(tot.p)}</td><td></td></tr>`;
+  const L=toNum(st.limit)||50,bp=bankPlan(dsum,list,L);
+  const dl=(a)=>list.map((d,j)=>a[j]?`${fmt(d.v)}円×${a[j]}`:'').filter(Boolean).join('、')||'なし';
+  if(bp.direct)$('bank').innerHTML=`<p class="ok">全部で${fmt(bp.P)}枚なので、上限${L}枚に収まります。金種表の合計枚数のとおり払い出してください。</p>`;
+  else if(bp.impossible)$('bank').innerHTML=`<p class="ng">支給総額${fmt(bp.T)}円は、いちばん少ない枚数でも${fmt(bp.minP)}枚になり、上限${L}枚では払い出せません。2回に分けて払い出してください。</p>`;
+  else if(bp.heavy)$('bank').innerHTML=`<p class="ng">金額が大きいため、この画面では計算できませんでした。</p>`;
+  else $('bank').innerHTML=`<div class="bk"><div class="box"><div class="k">信金で払い出す枚数</div><div class="big">${fmt(cnt(bp.w))}<small style="font-size:.45em">枚</small></div>
+    <div style="margin:6px 0 10px;font-size:15px">金種表のままだと${fmt(bp.P)}枚／上限${L}枚</div>
+    <table><thead><tr><th class="l">金種</th><th>枚数</th><th>金額</th></tr></thead><tbody>${list.map((d,j)=>bp.w[j]?`<tr><td class="l">${fmt(d.v)}円</td><td>${bp.w[j]}</td><td>${fmt(bp.w[j]*d.v)}</td></tr>`:'').join('')}</tbody>
+    <tfoot><tr><td class="l">合計</td><td>${fmt(cnt(bp.w))}</td><td>${fmt(bp.T)}</td></tr></tfoot></table></div>
+    <div class="box"><div class="k">両替するもの（${fmt(bp.R)}円分）</div>
+    <div class="ex" style="margin:10px 0"><span><b>${dl(bp.e)}</b></span><span class="arrow">→</span><span><b>${dl(bp.u)}</b></span></div>
+    <p style="margin:0;font-size:15px">両替で受け取るのは${fmt(cnt(bp.u))}枚です。それ以外の${fmt(bp.P-cnt(bp.u))}枚は、払い出したものをそのまま封筒に入れられます。</p></div></div>`;
+  st._bank=bp;
   $('grand').innerHTML=`${fmt(tot.p)}<small>円</small>`;
   $('fN').textContent=st.count;
   $('fB').textContent=fmt(list.reduce((a,d,j)=>a+(d.b?dsum[j]:0),0));
@@ -238,6 +289,7 @@ $('dest').addEventListener('input',e=>{st.dest=e.target.value;update()});
 $('count').addEventListener('change',e=>{st.count=+e.target.value;renderRows()});
 $('round').addEventListener('change',e=>{st.round=+e.target.value;update()});
 $('use2000').addEventListener('change',e=>{st.use2000=e.target.checked;update()});
+$('limit').addEventListener('input',e=>{st.limit=String(toNum(e.target.value)||'');update()});
 $('use5000').addEventListener('change',e=>{st.use5000=e.target.checked;update()});
 
 const say=m=>{$('msg').textContent=m;clearTimeout(say.t);say.t=setTimeout(()=>$('msg').textContent='',4000)};
@@ -262,6 +314,8 @@ $('copyAll').addEventListener('click',async()=>{
   st.rows.slice(0,st.count).forEach((r,i)=>{const {s,p}=pay(r);P+=p;const sp=split(p,list);sp.forEach((n,j)=>ds[j]+=n);
     L.push([i+1,r.name,r.from,toNum(r.t),toNum(r.b),r.rt===false?'片道':'往復',fare(r),toNum(r.h),toNum(r.d),toNum(r.o),s,p,...sp])});
   L.push(['合計','','','','','','','','','','',P,...ds]);
+  const bp=st._bank;
+  if(bp&&bp.w){L.push([],['信金払い出し（上限'+(toNum(st.limit)||50)+'枚）'],['金種',...list.map(d=>d.v+'円'),'合計枚数'],['払い出し',...bp.w,cnt(bp.w)],['両替に出す',...bp.e,cnt(bp.e)],['両替で受け取る',...bp.u,cnt(bp.u)])}
   const tsv=L.map(r=>r.join('\t')).join('\n');
   try{await navigator.clipboard.writeText(tsv);say('コピーしました。Excelやスプレッドシートに貼り付けできます。')}
   catch(err){say('コピーできませんでした。ブラウザの設定をご確認ください。')}});
