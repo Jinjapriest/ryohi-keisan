@@ -95,10 +95,11 @@ hr{border:0;border-top:1px solid var(--line);margin:0}
 @media print{
  @page{size:A4 portrait;margin:12mm}
  :root{color-scheme:light}body{background:#fff;color:#000;font-size:11pt}
- body>section:not(#rosterBand),body>hr,.rhead,#rosterBand .note{display:none!important}
+ body>section:not(#rosterBand),body>hr,.rhead,#pmsg,#rosterBand .note{display:none!important}
+ .stitle,.smeta,.sline{color:#000}#rtab thead{display:table-header-group}
  .band{padding:0}.sheet{border:0;padding:0}.scroll{overflow:visible}
  #rtab{min-width:0;width:100%;font-size:10.5pt}#rtab th,#rtab td{border:1px solid #000;color:#000;background:#fff;position:static}
- #rtab tbody td{height:13mm}#rtab tr{break-inside:avoid}}
+ #rtab tbody td{height:11mm}#rtab tr{break-inside:avoid}}
 @media(max-width:900px){.top{grid-template-columns:minmax(0,1fr)}.bulk{grid-template-columns:repeat(2,minmax(0,1fr))}.bulk button{grid-column:1/-1}}
 @media(max-width:600px){.meta{grid-template-columns:minmax(0,1fr)}table{font-size:13px}}
 </style>
@@ -172,7 +173,8 @@ hr{border:0;border-top:1px solid var(--line);margin:0}
 </div></section>
 <hr>
 <section class="band" id="rosterBand"><div class="wrap">
-  <div class="rhead"><h2>旅費受領名簿</h2><button id="copyRoster">名簿をコピー（Excel貼り付け用）</button></div>
+  <div class="rhead"><h2>旅費受領名簿</h2><div class="actions" style="margin:0"><button class="pri" id="printRoster">名簿を印刷・PDF保存</button><button id="copyRoster">名簿をコピー（Excel貼り付け用）</button></div></div>
+  <div class="msg" id="pmsg"></div>
   <div class="sheet" id="sheet">
     <div class="stitle">旅費受領名簿</div>
     <div class="smeta" id="smeta"></div>
@@ -182,7 +184,7 @@ hr{border:0;border-top:1px solid var(--line);margin:0}
       <tbody id="rbody"></tbody><tfoot id="rfoot"></tfoot>
     </table></div>
   </div>
-  <p class="note">この画面を印刷すると、この名簿だけが白黒で印刷されます。印刷できない場合は「名簿をコピー」でExcelに貼り付けてから印刷してください。</p>
+  <p class="note">「名簿を印刷・PDF保存」を押すと、この名簿だけがA4縦・白黒で印刷画面に出ます。PDFにするときは、印刷画面の「送信先」（またはプリンター）で「PDFに保存」を選んでください。</p>
 </div></section>
 
 <script>
@@ -320,6 +322,13 @@ $('copyAll').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(tsv);say('コピーしました。Excelやスプレッドシートに貼り付けできます。')}
   catch(err){say('コピーできませんでした。ブラウザの設定をご確認ください。')}});
 
+$('printRoster').addEventListener('click',()=>{
+  const t=st.title?`旅費受領名簿_${st.title}${st.date?'_'+st.date:''}`:'旅費受領名簿';
+  const old=document.title;document.title=t.replace(/[\\/:*?"<>|]/g,'');
+  let ok=true;
+  try{if(window.self!==window.top)ok=false;else window.print()}catch(err){ok=false}
+  setTimeout(()=>{document.title=old},1000);
+  if(!ok){$('pmsg').textContent='この画面からは印刷できません。ホーム画面・デスクトップに追加したアプリ（jinjapriest.github.io/ryohi-keisan）から押してください。'}});
 $('copyRoster').addEventListener('click',async()=>{
   const L=[['旅費受領名簿'],['件名',st.title],['日付',st.date],['行先',st.dest],['下記の金額を、旅費として確かに受領しました。'],[],
     ['No.','出発神社','氏名','交通費','宿泊費','日当','その他','支給額','受領印']];
