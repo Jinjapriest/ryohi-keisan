@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>旅費計算・金種表</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#c8102e">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="旅費計算">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -117,6 +124,7 @@ hr{border:0;border-top:1px solid var(--line);margin:0}
       <button class="pri" id="copyAll">表をコピー（Excel貼り付け用）</button>
       <button id="clearAmt">金額だけ消す</button>
       <button class="ghost" id="reset">すべて初期化</button>
+      <button id="install" hidden>アプリとして追加</button>
     </div>
     <div class="msg" id="msg"></div>
   </div>
@@ -267,6 +275,11 @@ $('copyRoster').addEventListener('click',async()=>{
   L.push(['合計','','',T.c,T.h,T.d,T.o,T.p,'']);
   try{await navigator.clipboard.writeText(L.map(r=>r.join('\t')).join('\n'));say('名簿をコピーしました。Excelに貼り付けて印刷できます。')}
   catch(err){say('コピーできませんでした。ブラウザの設定をご確認ください。')}});
+let deferred=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('install').hidden=false});
+$('install').addEventListener('click',async()=>{if(!deferred)return;deferred.prompt();try{await deferred.userChoice}catch(err){}deferred=null;$('install').hidden=true});
+window.addEventListener('appinstalled',()=>{$('install').hidden=true;say('アプリとして追加しました。')});
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(err){}}
 bindMeta();renderRows();
 }
 </script>
